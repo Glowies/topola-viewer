@@ -593,6 +593,8 @@ export function App() {
         colors={config.color}
         hideIds={config.id}
         hideSex={config.sex}
+        maxAncestorGenerations={config.maxAncestorGenerations}
+        maxDescendantGenerations={config.maxDescendantGenerations}
       />
     );
   }
@@ -620,6 +622,7 @@ export function App() {
                 data={data}
                 selectedIndiId={detailIndi || updatedSelection.id}
                 config={config}
+                chartType={chartType}
                 expanded={showSidePanel}
                 onToggle={onToggleSidePanel}
                 onConfigChange={(config) => {

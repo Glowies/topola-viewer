@@ -26,6 +26,7 @@ import {
   ChartColors as TopolaChartColors,
 } from 'topola';
 import {ChartColors, Ids, Sex} from './sidepanel/config/config';
+import {filterGenerations} from './util/generation_filter';
 import {Media} from './util/media';
 import {usePrevious} from './util/previous-hook';
 
@@ -325,6 +326,10 @@ export interface ChartProps {
   colors?: ChartColors;
   hideIds?: Ids;
   hideSex?: Sex;
+  /** Limits the number of ancestor generations shown in the Hourglass chart (undefined = unlimited). */
+  maxAncestorGenerations?: number;
+  /** Limits the number of descendant generations shown in the Hourglass chart (undefined = unlimited). */
+  maxDescendantGenerations?: number;
 }
 
 class ChartWrapper {
@@ -375,10 +380,20 @@ class ChartWrapper {
       return;
     }
 
+    const chartData =
+      props.chartType === ChartType.Hourglass
+        ? filterGenerations(
+            props.data,
+            props.selection.id,
+            props.maxAncestorGenerations,
+            props.maxDescendantGenerations,
+          )
+        : props.data;
+
     if (args.initialRender || !this.chart) {
       (select('#chart').node() as HTMLElement).innerHTML = '';
       this.chart = createChart({
-        json: props.data,
+        json: chartData,
         chartType: getChartType(props.chartType),
         renderer: getRendererType(props.chartType),
         svgSelector: '#chart',
@@ -402,7 +417,7 @@ class ChartWrapper {
         locale: intl.locale,
       });
     } else {
-      this.chart.setData(props.data);
+      this.chart.setData(chartData);
     }
     const chartInfo = this.chart.render({
       startIndi: props.selection.id,
@@ -501,9 +516,11 @@ export function Chart(props: ChartProps) {
         props.chartType !== prevProps?.chartType ||
         props.colors !== prevProps?.colors ||
         props.hideIds !== prevProps?.hideIds ||
-        props.hideSex !== prevProps?.hideSex;
+        props.hideSex !== prevProps?.hideSex ||
+        props.maxAncestorGenerations !== prevProps?.maxAncestorGenerations ||
+        props.maxDescendantGenerations !== prevProps?.maxDescendantGenerations;
       const resetPosition =
-        props.chartType !== prevProps?.chartType ||
+        initialRender ||
         props.data !== prevProps.data ||
         // This does not work as the objects are always different instances.
         //props.selection !== prevProps.selection;

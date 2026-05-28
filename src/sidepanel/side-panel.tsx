@@ -1,5 +1,6 @@
 import {useIntl} from 'react-intl';
 import {Button, Icon, Sidebar, Tab} from 'semantic-ui-react';
+import {ChartType} from '../chart';
 import {TopolaData} from '../util/gedcom_util';
 import {Config, ConfigPanel} from './config/config';
 import {CollapsedDetails} from './details/collapsed-details';
@@ -9,6 +10,7 @@ interface SidePanelProps {
   data: TopolaData;
   selectedIndiId: string;
   config: Config;
+  chartType: ChartType;
   onConfigChange: (config: Config) => void;
   expanded: boolean;
   onToggle: () => void;
@@ -18,6 +20,7 @@ export function SidePanel({
   data,
   selectedIndiId,
   config,
+  chartType,
   onConfigChange,
   expanded,
   onToggle,
@@ -48,6 +51,7 @@ export function SidePanel({
         <ConfigPanel
           gedcom={data.gedcom}
           config={config}
+          isHourglassChart={chartType === ChartType.Hourglass}
           onChange={onConfigChange}
         />
       ),

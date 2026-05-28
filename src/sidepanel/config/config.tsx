@@ -1,6 +1,6 @@
 import {ParsedQuery} from 'query-string';
 import {FormattedMessage} from 'react-intl';
-import {Checkbox, Form, Header, Item} from 'semantic-ui-react';
+import {Checkbox, Form, Header, Input, Item} from 'semantic-ui-react';
 import {GedcomData} from '../../util/gedcom_util';
 import {SourceHead} from '../head/head';
 
@@ -24,12 +24,18 @@ export interface Config {
   color: ChartColors;
   id: Ids;
   sex: Sex;
+  /** Maximum ancestor generations to display in the Hourglass chart (undefined = unlimited). */
+  maxAncestorGenerations?: number;
+  /** Maximum descendant generations to display in the Hourglass chart (undefined = unlimited). */
+  maxDescendantGenerations?: number;
 }
 
 export const DEFALUT_CONFIG: Config = {
   color: ChartColors.COLOR_BY_GENERATION,
   id: Ids.SHOW,
   sex: Sex.SHOW,
+  maxAncestorGenerations: undefined,
+  maxDescendantGenerations: undefined,
 };
 
 const COLOR_ARG = new Map<string, ChartColors>([
@@ -54,6 +60,14 @@ const SEX_ARG = new Map<string, Sex>([
 const SEX_ARG_INVERSE = new Map<Sex, string>();
 SEX_ARG.forEach((v, k) => SEX_ARG_INVERSE.set(v, k));
 
+function parseOptionalNonNegativeInt(
+  value: string | undefined,
+): number | undefined {
+  if (value === undefined) return undefined;
+  const n = parseInt(value, 10);
+  return !isNaN(n) && n >= 0 ? n : undefined;
+}
+
 export function argsToConfig(args: ParsedQuery<unknown>): Config {
   const getParam = (name: string) => {
     const value = args[name];
@@ -64,6 +78,8 @@ export function argsToConfig(args: ParsedQuery<unknown>): Config {
     color: COLOR_ARG.get(getParam('c') ?? '') ?? DEFALUT_CONFIG.color,
     id: ID_ARG.get(getParam('i') ?? '') ?? DEFALUT_CONFIG.id,
     sex: SEX_ARG.get(getParam('s') ?? '') ?? DEFALUT_CONFIG.sex,
+    maxAncestorGenerations: parseOptionalNonNegativeInt(getParam('ag')),
+    maxDescendantGenerations: parseOptionalNonNegativeInt(getParam('dg')),
   };
 }
 
@@ -81,12 +97,20 @@ export function configToArgs(config: Config): ParsedQuery {
   if (sex) {
     result.s = sex;
   }
+  if (config.maxAncestorGenerations !== undefined) {
+    result.ag = String(config.maxAncestorGenerations);
+  }
+  if (config.maxDescendantGenerations !== undefined) {
+    result.dg = String(config.maxDescendantGenerations);
+  }
   return result;
 }
 
 export function ConfigPanel(props: {
   gedcom: GedcomData;
   config: Config;
+  /** When true, the Hourglass-specific generation-limit controls are shown. */
+  isHourglassChart: boolean;
   onChange: (config: Config) => void;
 }) {
   return (
@@ -252,6 +276,70 @@ export function ConfigPanel(props: {
               </Form.Field>
             </Item.Content>
           </Item>
+          {props.isHourglassChart && (
+            <Item>
+              <Item.Content>
+                <Header sub>
+                  <FormattedMessage
+                    id="config.generations"
+                    defaultMessage="Generations"
+                  />
+                </Header>
+                <Form.Field>
+                  <label>
+                    <FormattedMessage
+                      id="config.generations.ancestor"
+                      defaultMessage="Ancestor generations"
+                    />
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="∞"
+                    value={props.config.maxAncestorGenerations ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const parsed = parseInt(val, 10);
+                      props.onChange({
+                        ...props.config,
+                        maxAncestorGenerations:
+                          val === '' || isNaN(parsed) || parsed < 0
+                            ? undefined
+                            : parsed,
+                      });
+                    }}
+                  />
+                </Form.Field>
+                <Form.Field>
+                  <label>
+                    <FormattedMessage
+                      id="config.generations.descendant"
+                      defaultMessage="Descendant generations"
+                    />
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="∞"
+                    value={props.config.maxDescendantGenerations ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const parsed = parseInt(val, 10);
+                      props.onChange({
+                        ...props.config,
+                        maxDescendantGenerations:
+                          val === '' || isNaN(parsed) || parsed < 0
+                            ? undefined
+                            : parsed,
+                      });
+                    }}
+                  />
+                </Form.Field>
+              </Item.Content>
+            </Item>
+          )}
         </Item.Group>
       </Form>
     </>
